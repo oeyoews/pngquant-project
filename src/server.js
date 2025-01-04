@@ -50,7 +50,7 @@ function checkDir(dir) {
 }
 
 app.post('/compress', uploadFile, (req, res) => {
-  console.log('开始压缩文件', new Date())
+  console.log('开始压缩文件', new Date(), req.file.originalname);
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
@@ -99,11 +99,13 @@ app.post('/compress', uploadFile, (req, res) => {
             'base64'
           )}`;
           const fileSizeInKB = (stats.size / 1024).toFixed(2); // 文件大小（KB）
+          console.log(stats)
 
           // 返回文件大小和 Base64 数据
           res.json({
             size: fileSizeInKB,
             data: base64Image,
+            filename: req.file.originalname,
           });
         });
       });
