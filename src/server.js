@@ -3,7 +3,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
-const pngquant = require('pngquant-bin');
+const { default: pngquant } = require('pngquant-bin');
+
+// console.log(pngquant)
 
 const app = express();
 app.use(express.static('public'));
@@ -26,19 +28,12 @@ const storage = multer.diskStorage({
   },
 });
 
-//自定义中间件
 function uploadFile(req, res, next) {
-  //dest 值为文件存储的路径;single方法,表示上传单个文件,参数为表单数据对应的key
   let upload = multer({ storage }).single('file');
-  debugger;
   upload(req, res, (err) => {
-    //打印结果看下面的截图
-    console.log(req.file);
     if (err) {
       res.send('err:' + err);
     } else {
-      //将文件信息赋值到req.body中，继续执行下一步
-      req.body.photo = req.file.filename;
       next();
     }
   });
@@ -56,7 +51,6 @@ app.post('/compress', uploadFile, (req, res) => {
     return res.status(400).send('No file uploaded.');
   }
 
-  console.log(req.file);
   const inputPath = req.file.path;
 
   // 确保目标目录存在
@@ -67,8 +61,10 @@ app.post('/compress', uploadFile, (req, res) => {
   );
 
   execFile(
-    `pngquant`,
-    ['--quality=65-80', '-o', outputPath2, inputPath],
+    // `pngquant`,
+    // ['-o', outputPath2, inputPath],
+    pngquant,
+    ['--quality=65-80', '--output', outputPath2, inputPath],
     (err) => {
       if (err) {
         console.error('Error during compression:', err);
