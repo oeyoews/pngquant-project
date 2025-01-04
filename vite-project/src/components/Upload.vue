@@ -32,13 +32,14 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ElNotification, ElButton, ElUpload } from 'element-plus';
 
 export default {
-	components: {
-		ElButton, ElUpload
-	},
+  components: {
+    ElButton,
+    ElUpload,
+  },
   name: 'ImageCompressor',
   setup() {
     const originalSize = ref(null);
@@ -96,6 +97,36 @@ export default {
         ElNotification({ type: 'error', message: '复制失败，请重试' });
       }
     };
+
+    const handlePaste = async (event) => {
+      const clipboardItems = event.clipboardData.items;
+      for (const item of clipboardItems) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          originalSize.value = formatFileSize(file);
+
+          const formData = new FormData();
+          formData.append('file', file);
+
+          // 模拟请求压缩
+          const response = await fetch('/compress', {
+            method: 'POST',
+            body: formData,
+          });
+          const result = await response.json();
+          newSize.value = result.size;
+          imageSrc.value = result.data;
+        }
+      }
+    };
+
+    onMounted(() => {
+      window.addEventListener('paste', handlePaste);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('paste', handlePaste);
+    });
 
     return {
       originalSize,
