@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片压缩</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+  <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  <style>
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+
+    img {
+      max-width: 100%;
+      margin: 20px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .file-sizes {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container">
+    <div>
+    <el-upload accept=".png" drag action="/compress" :show-file-list="true" :before-upload="beforeUpload" :on-success="handleSuccess">
+      <el-button size="small" type="primary">点击上传图片</el-button>
+    </el-upload>
+    </div>
+
+    <!-- 显示文件大小 -->
+    <div v-if="originalSize !== null && newSize !== null" class="file-sizes">
+      原文件大小: {{ originalSize }} KB | 压缩后大小: {{ newSize }} KB
+      压缩率为: {{ (((originalSize - newSize) / originalSize) * 100).toFixed(2) }}%
+      大小减少了: {{ (originalSize - newSize).toFixed(2)}}kb
+    </div>
+
+    <!-- 显示压缩后的图片 -->
+     <div style="display: flex; justify-content: center;flex-direction: column;">
+      <div>
+    <img v-if="imageSrc" :src="imageSrc" alt="压缩结果" style="border-radius: 5px;max-height: 50vh;max-width: 50vw;" />
+      </div>
+      <div>
+    <el-button size="small" v-if="imageSrc" @click="copyImage">复制图片</el-button>
+      </div>
+     </div>
+
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        isDragging: false,
+        compressedBlob: null,
+        originalSize: null,
+        newSize: null,
+        imageSrc: null
+      },
+      methods: {
+        formatFileSize(file) {
+          return (file.size / 1024).toFixed(2);
+        },
+        beforeUpload(file) {
+          this.originalSize = this.formatFileSize(file);
+        },
+        handleSuccess(res, file) {
+          console.log(res, '返回')
+          if (file) {
+            // this.newSize = this.formatFileSize();
+            this.newSize = res.size;
+            this.imageSrc = res.data;
+          }
+        },
+        base64ToBlob(base64, mimeType = '') {
+          const byteCharacters = window.atob(base64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          return new Blob([byteArray], { type: mimeType });
+        },
+        async copyImage() {
+          try {
+            const clipboardItem = new ClipboardItem({ 'image/png': this.base64ToBlob(this.imageSrc.replace('data:image/png;base64,', ''), 'image/png') });
+            await navigator.clipboard.write([clipboardItem]);
+            // alert('图片已复制到剪贴板！');
+            this.$notify.success('图片已复制到剪贴板');
+          } catch (error) {
+            console.error('复制失败:', error);
+            this.$notify.error('复制失败，请重试');
+          }
+        },
+      },
+    });
+  </script>
+</body>
+
+</html>

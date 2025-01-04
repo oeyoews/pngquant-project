@@ -4,11 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
 const { default: pngquant } = require('pngquant-bin');
+const cors = require('cors');
 
 // console.log(pngquant)
 
 const app = express();
+const PORT = 3001;
 app.use(express.static('public'));
+app.use(cors()); // 允许跨域
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -47,6 +50,7 @@ function checkDir(dir) {
 }
 
 app.post('/compress', uploadFile, (req, res) => {
+  console.log('开始压缩文件', new Date())
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
@@ -107,6 +111,6 @@ app.post('/compress', uploadFile, (req, res) => {
   );
 });
 
-app.listen(3000, () => {
-  console.log('Server running at http://localhost:3000');
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
