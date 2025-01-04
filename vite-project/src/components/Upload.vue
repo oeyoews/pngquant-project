@@ -68,7 +68,7 @@ import { genFileId, ElNotification, ElButton, ElUpload } from 'element-plus';
 const originalSize = ref(null);
 const newSize = ref(null);
 const imageSrc = ref(null);
-const originalName = ref(null);
+const originalName = ref(new Date().getTime() +'图片.png');
 
 const compressionRate = computed(() => {
   if (originalSize.value && newSize.value) {
