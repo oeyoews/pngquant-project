@@ -5,3 +5,11 @@
 * [ ] 支持多文件上传和压缩 -->
 
 ![alt text](https://github.com/oeyoews/pngquant-project/blob/main/banner.png?raw=true)
+
+## Run
+
+```bash
+pnpm install && pnpm run dev
+```
+
+<!-- ## Build -->
