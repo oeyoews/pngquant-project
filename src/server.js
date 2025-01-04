@@ -11,6 +11,7 @@ app.use(express.static('public'));
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, 'upload');
+    checkDir(uploadDir);
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -43,6 +44,13 @@ function uploadFile(req, res, next) {
   });
 }
 
+function checkDir(dir) {
+  if (!fs.existsSync(dir)) {
+    console.log('创建目录', dir);
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
 app.post('/compress', uploadFile, (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
@@ -50,13 +58,10 @@ app.post('/compress', uploadFile, (req, res) => {
 
   console.log(req.file);
   const inputPath = req.file.path;
-  const outputPath = path.join(__dirname, 'upload', `${req.file.filename}`);
 
   // 确保目标目录存在
   const compressedDir = path.join(__dirname, 'compressed');
-  if (!fs.existsSync(compressedDir)) {
-    fs.mkdirSync(compressedDir, { recursive: true });
-  }
+  checkDir(compressedDir);
   const outputPath2 = path.join(
     compressedDir + '/' + new Date().getTime() + '.png'
   );
