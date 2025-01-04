@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>图片压缩</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+  <!-- <script src="https://cdn.tailwindcss.com"></script> -->
   <style>
     .container {
       text-align: center;
@@ -71,14 +72,17 @@
       <el-button size="small" type="primary">点击上传</el-button>
     </el-upload> -->
 
-    <!-- 显示压缩后的图片 -->
-    <img v-if="outputSrc" :src="outputSrc" alt="压缩结果" />
-    <button v-if="outputSrc" @click="copyImage">复制图片</button>
-
     <!-- 显示文件大小 -->
     <div v-if="originalSize !== null && newSize !== null" class="file-sizes">
       原文件大小: {{ originalSize }} KB | 压缩后大小: {{ newSize }} KB
+      压缩率为: {{ (((originalSize - newSize) / originalSize) * 100).toFixed(2) }}%
+      大小减少了: {{ (originalSize - newSize).toFixed(2)}}kb
     </div>
+
+    <!-- 显示压缩后的图片 -->
+    <img v-if="outputSrc" :src="outputSrc" alt="压缩结果" style="border-radius: 5px;max-height: 50vh;max-width: 50vw;"/>
+    <button v-if="outputSrc" @click="copyImage">复制图片</button>
+
   </div>
 
   <script>
