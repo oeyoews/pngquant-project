@@ -1,3 +1,4 @@
+// TODO: 如果不是png, 警告
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -28,8 +29,9 @@ const storage = multer.diskStorage({
 //自定义中间件
 function uploadFile(req,res,next){
 	//dest 值为文件存储的路径;single方法,表示上传单个文件,参数为表单数据对应的key
-	let upload=multer({ storage}).single("image");
-	upload(req,res,(err)=>{
+	let upload=multer({ storage}).single("file");
+  debugger
+	upload(req, res,(err)=>{
 		//打印结果看下面的截图
 	    console.log(req.file);
 		if(err){
@@ -43,11 +45,12 @@ function uploadFile(req,res,next){
 }
 
 
-app.post('/compress',uploadFile, (req, res) => {
+app.post('/compress', uploadFile, (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
 
+  console.log(req.file);
   const inputPath = req.file.path;
   const outputPath = path.join(__dirname, 'upload', `${req.file.filename}`);
 
@@ -56,7 +59,6 @@ app.post('/compress',uploadFile, (req, res) => {
   if (!fs.existsSync(compressedDir)) {
     fs.mkdirSync(compressedDir, { recursive: true });
   }
-  // console.log(inputPath, outputPath)
   const outputPath2 = path.join(compressedDir + '/' + new Date().getTime() + ".png");
 
   execFile(
@@ -69,7 +71,7 @@ app.post('/compress',uploadFile, (req, res) => {
       }
 
       res.setHeader('Content-Type', 'image/png');
-      res.sendFile(outputPath, (sendErr) => {
+      res.sendFile(outputPath2, (sendErr) => {
         if (sendErr) console.error('Error sending file:', sendErr);
         // fs.unlinkSync(inputPath); // 删除临时文件
         // fs.unlinkSync(outputPath);

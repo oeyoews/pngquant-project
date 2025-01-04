@@ -35,6 +35,10 @@
     input[type="file"] {
       display: none;
     }
+    .file-sizes {
+      margin-top: 10px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -55,13 +59,26 @@
     <input
       type="file"
       id="fileInput"
-      accept="image/*"
+      accept="image/png"
       @change="onFileChange"
     />
+    <!-- <el-upload
+      class="upload-demo"
+      action="/compress"
+      :show-file-list="false"
+      :on-change="onFileChange"
+    >
+      <el-button size="small" type="primary">点击上传</el-button>
+    </el-upload> -->
 
     <!-- 显示压缩后的图片 -->
     <img v-if="outputSrc" :src="outputSrc" alt="压缩结果" />
     <button v-if="outputSrc" @click="copyImage">复制图片</button>
+
+    <!-- 显示文件大小 -->
+    <div v-if="originalSize !== null && newSize !== null" class="file-sizes">
+      原文件大小: {{ originalSize }} KB | 压缩后大小: {{ newSize }} KB
+    </div>
   </div>
 
   <script>
@@ -71,6 +88,8 @@
         isDragging: false,
         outputSrc: null,
         compressedBlob: null,
+        originalSize: null,
+        newSize: null,
       },
       methods: {
         onDragOver() {
@@ -83,6 +102,7 @@
           this.isDragging = false;
           const file = event.dataTransfer.files[0];
           if (file) {
+            this.originalSize = (file.size / 1024).toFixed(2);
             await this.compressImage(file);
           } else {
             alert('请拖入有效的图片文件');
@@ -94,12 +114,13 @@
         async onFileChange(event) {
           const file = event.target.files[0];
           if (file) {
+            this.originalSize = (file.size / 1024).toFixed(2);
             await this.compressImage(file);
           }
         },
         async compressImage(file) {
           const formData = new FormData();
-          formData.append('image', file);
+          formData.append('file', file);
 
           try {
             const response = await fetch('/compress', {
@@ -113,6 +134,7 @@
             }
 
             const blob = await response.blob();
+            this.newSize = (blob.size / 1024).toFixed(2);
             this.outputSrc = URL.createObjectURL(blob);
 
             // 保存压缩后的 Blob 数据，便于复制到剪贴板
