@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片压缩</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+  <style>
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+    #dropzone {
+      width: 300px;
+      height: 200px;
+      border: 2px dashed #ccc;
+      margin: 20px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    #dropzone.active {
+      border-color: #00f;
+    }
+    img {
+      max-width: 100%;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <!-- 文件拖拽区域 -->
+    <div
+      id="dropzone"
+      @dragover.prevent="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
+      :class="{ active: isDragging }"
+      @click="selectFile"
+    >
+      拖拽图片到这里或点击选择文件
+    </div>
+
+    <!-- 文件选择框 -->
+    <input
+      type="file"
+      id="fileInput"
+      accept="image/*"
+      @change="onFileChange"
+    />
+
+    <!-- 显示压缩后的图片 -->
+    <img v-if="outputSrc" :src="outputSrc" alt="压缩结果" />
+    <button v-if="outputSrc" @click="copyImage">复制图片</button>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        isDragging: false,
+        outputSrc: null,
+        compressedBlob: null,
+      },
+      methods: {
+        onDragOver() {
+          this.isDragging = true;
+        },
+        onDragLeave() {
+          this.isDragging = false;
+        },
+        async onDrop(event) {
+          this.isDragging = false;
+          const file = event.dataTransfer.files[0];
+          if (file) {
+            await this.compressImage(file);
+          } else {
+            alert('请拖入有效的图片文件');
+          }
+        },
+        selectFile() {
+          document.getElementById('fileInput').click();
+        },
+        async onFileChange(event) {
+          const file = event.target.files[0];
+          if (file) {
+            await this.compressImage(file);
+          }
+        },
+        async compressImage(file) {
+          const formData = new FormData();
+          formData.append('image', file);
+
+          try {
+            const response = await fetch('/compress', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!response.ok) {
+              alert('图片压缩失败');
+              return;
+            }
+
+            const blob = await response.blob();
+            this.outputSrc = URL.createObjectURL(blob);
+
+            // 保存压缩后的 Blob 数据，便于复制到剪贴板
+            this.compressedBlob = blob;
+          } catch (error) {
+            console.error('压缩失败:', error);
+            alert('压缩失败，请稍后再试');
+          }
+        },
+        async copyImage() {
+          try {
+            const clipboardItem = new ClipboardItem({ 'image/png': this.compressedBlob });
+            await navigator.clipboard.write([clipboardItem]);
+            alert('图片已复制到剪贴板！');
+          } catch (error) {
+            console.error('复制失败:', error);
+            alert('复制失败，请重试');
+          }
+        },
+      },
+    });
+  </script>
+</body>
+</html>
