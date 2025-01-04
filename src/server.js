@@ -26,23 +26,22 @@ const storage = multer.diskStorage({
 });
 
 //自定义中间件
-function uploadFile(req,res,next){
-	//dest 值为文件存储的路径;single方法,表示上传单个文件,参数为表单数据对应的key
-	let upload=multer({ storage}).single("file");
-  debugger
-	upload(req, res,(err)=>{
-		//打印结果看下面的截图
-	    console.log(req.file);
-		if(err){
-	        res.send("err:"+err);
-	    }else{
-	        //将文件信息赋值到req.body中，继续执行下一步
-	        req.body.photo=req.file.filename;
-	        next();
-	    }
-	})
+function uploadFile(req, res, next) {
+  //dest 值为文件存储的路径;single方法,表示上传单个文件,参数为表单数据对应的key
+  let upload = multer({ storage }).single('file');
+  debugger;
+  upload(req, res, (err) => {
+    //打印结果看下面的截图
+    console.log(req.file);
+    if (err) {
+      res.send('err:' + err);
+    } else {
+      //将文件信息赋值到req.body中，继续执行下一步
+      req.body.photo = req.file.filename;
+      next();
+    }
+  });
 }
-
 
 app.post('/compress', uploadFile, (req, res) => {
   if (!req.file) {
@@ -58,22 +57,50 @@ app.post('/compress', uploadFile, (req, res) => {
   if (!fs.existsSync(compressedDir)) {
     fs.mkdirSync(compressedDir, { recursive: true });
   }
-  const outputPath2 = path.join(compressedDir + '/' + new Date().getTime() + ".png");
+  const outputPath2 = path.join(
+    compressedDir + '/' + new Date().getTime() + '.png'
+  );
 
   execFile(
     `pngquant`,
-    ['--quality=65-80', '-o',outputPath2,  inputPath],
+    ['--quality=65-80', '-o', outputPath2, inputPath],
     (err) => {
       if (err) {
         console.error('Error during compression:', err);
         return res.status(500).send('Compression failed');
       }
 
-      res.setHeader('Content-Type', 'image/png');
-      res.sendFile(outputPath2, (sendErr) => {
-        if (sendErr) console.error('Error sending file:', sendErr);
-        // fs.unlinkSync(inputPath); // 删除临时文件
-        // fs.unlinkSync(outputPath);
+      // res.setHeader('Content-Type', 'image/png');
+      // res.sendFile(outputPath2, (sendErr) => {
+      //   if (sendErr) console.error('Error sending file:', sendErr);
+      // });
+      // console.log(req.file.)
+      // return
+      fs.stat(outputPath2, (err, stats) => {
+        if (err) {
+          console.error('Error getting file size:', err);
+          return res.status(500).json({ error: 'Failed to get file size' });
+        }
+
+        // 读取文件数据
+        fs.readFile(outputPath2, (readErr, fileData) => {
+          if (readErr) {
+            console.error('Error reading file:', readErr);
+            return res.status(500).json({ error: 'Failed to read file' });
+          }
+
+          // 将文件转换为 Base64
+          const base64Image = `data:image/png;base64,${fileData.toString(
+            'base64'
+          )}`;
+          const fileSizeInKB = (stats.size / 1024).toFixed(2); // 文件大小（KB）
+
+          // 返回文件大小和 Base64 数据
+          res.json({
+            size: fileSizeInKB,
+            data: base64Image,
+          });
+        });
       });
     }
   );

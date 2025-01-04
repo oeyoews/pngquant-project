@@ -1,76 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>图片压缩</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
   <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
   <style>
     .container {
       text-align: center;
       padding: 20px;
     }
-    #dropzone {
-      width: 300px;
-      height: 200px;
-      border: 2px dashed #ccc;
-      margin: 20px auto;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-    }
-    #dropzone.active {
-      border-color: #00f;
-    }
+
     img {
       max-width: 100%;
       margin: 20px 0;
     }
+
     button {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
     }
-    input[type="file"] {
-      display: none;
-    }
+
     .file-sizes {
       margin-top: 10px;
       font-size: 14px;
     }
   </style>
 </head>
+
 <body>
   <div id="app" class="container">
-    <!-- 文件拖拽区域 -->
-    <div
-      id="dropzone"
-      @dragover.prevent="onDragOver"
-      @dragleave="onDragLeave"
-      @drop="onDrop"
-      :class="{ active: isDragging }"
-      @click="selectFile"
-    >
-      拖拽图片到这里或点击选择文件
+    <div>
+    <el-upload drag action="/compress" :show-file-list="true" :before-upload="beforeUpload" :on-success="handleSuccess">
+      <el-button size="small" type="primary">点击上传图片</el-button>
+    </el-upload>
     </div>
-
-    <!-- 文件选择框 -->
-    <input
-      type="file"
-      id="fileInput"
-      accept="image/png"
-      @change="onFileChange"
-    />
-    <!-- <el-upload
-      class="upload-demo"
-      action="/compress"
-      :show-file-list="false"
-      :on-change="onFileChange"
-    >
-      <el-button size="small" type="primary">点击上传</el-button>
-    </el-upload> -->
 
     <!-- 显示文件大小 -->
     <div v-if="originalSize !== null && newSize !== null" class="file-sizes">
@@ -80,8 +49,14 @@
     </div>
 
     <!-- 显示压缩后的图片 -->
-    <img v-if="outputSrc" :src="outputSrc" alt="压缩结果" style="border-radius: 5px;max-height: 50vh;max-width: 50vw;"/>
-    <button v-if="outputSrc" @click="copyImage">复制图片</button>
+     <div style="display: flex; justify-content: center;flex-direction: column;">
+      <div>
+    <img v-if="imageSrc" :src="imageSrc" alt="压缩结果" style="border-radius: 5px;max-height: 50vh;max-width: 50vw;" />
+      </div>
+      <div>
+    <el-button size="small" v-if="imageSrc" @click="copyImage">复制图片</el-button>
+      </div>
+     </div>
 
   </div>
 
@@ -90,76 +65,49 @@
       el: '#app',
       data: {
         isDragging: false,
-        outputSrc: null,
         compressedBlob: null,
         originalSize: null,
         newSize: null,
+        imageSrc: null
       },
       methods: {
-        onDragOver() {
-          this.isDragging = true;
+        formatFileSize(file) {
+          return (file.size / 1024).toFixed(2);
         },
-        onDragLeave() {
-          this.isDragging = false;
+        beforeUpload(file) {
+          this.originalSize = this.formatFileSize(file);
         },
-        async onDrop(event) {
-          this.isDragging = false;
-          const file = event.dataTransfer.files[0];
+        handleSuccess(res, file) {
+          console.log(res, '返回')
           if (file) {
-            this.originalSize = (file.size / 1024).toFixed(2);
-            await this.compressImage(file);
-          } else {
-            alert('请拖入有效的图片文件');
+            // this.newSize = this.formatFileSize();
+            this.newSize = res.size;
+            this.imageSrc = res.data;
           }
         },
-        selectFile() {
-          document.getElementById('fileInput').click();
-        },
-        async onFileChange(event) {
-          const file = event.target.files[0];
-          if (file) {
-            this.originalSize = (file.size / 1024).toFixed(2);
-            await this.compressImage(file);
+        base64ToBlob(base64, mimeType = '') {
+          const byteCharacters = window.atob(base64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
-        },
-        async compressImage(file) {
-          const formData = new FormData();
-          formData.append('file', file);
-
-          try {
-            const response = await fetch('/compress', {
-              method: 'POST',
-              body: formData,
-            });
-
-            if (!response.ok) {
-              alert('图片压缩失败');
-              return;
-            }
-
-            const blob = await response.blob();
-            this.newSize = (blob.size / 1024).toFixed(2);
-            this.outputSrc = URL.createObjectURL(blob);
-
-            // 保存压缩后的 Blob 数据，便于复制到剪贴板
-            this.compressedBlob = blob;
-          } catch (error) {
-            console.error('压缩失败:', error);
-            alert('压缩失败，请稍后再试');
-          }
+          const byteArray = new Uint8Array(byteNumbers);
+          return new Blob([byteArray], { type: mimeType });
         },
         async copyImage() {
           try {
-            const clipboardItem = new ClipboardItem({ 'image/png': this.compressedBlob });
+            const clipboardItem = new ClipboardItem({ 'image/png': this.base64ToBlob(this.imageSrc.replace('data:image/png;base64,', ''), 'image/png') });
             await navigator.clipboard.write([clipboardItem]);
-            alert('图片已复制到剪贴板！');
+            // alert('图片已复制到剪贴板！');
+            this.$notify.success('图片已复制到剪贴板');
           } catch (error) {
             console.error('复制失败:', error);
-            alert('复制失败，请重试');
+            this.$notify.error('复制失败，请重试');
           }
         },
       },
     });
   </script>
 </body>
+
 </html>
