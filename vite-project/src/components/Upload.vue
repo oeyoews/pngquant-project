@@ -104,6 +104,7 @@ const handleSuccess = (res, file) => {
   ElNotification.closeAll();
   if(res.status === 500) {
     ElNotification({ type: 'error', message: res.message });
+    return
   }
   ElNotification({ type: 'success', message: '图片压缩成功' });
   if (file) {
