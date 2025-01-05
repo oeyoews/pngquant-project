@@ -9,7 +9,7 @@
 ## Run
 
 ```bash
-pnpm install && pnpm run dev
+pnpm install && pnpm run dev # or use pngquant-start.bat
 ```
 <!-- stackblitz pngquant 无权限创建目录, chomd 无效 -->
 
