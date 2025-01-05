@@ -26,49 +26,51 @@
     </el-upload>
 
     <!-- 显示文件大小 -->
-    <div style="margin: 0 auto; width: 600px;text-align: center;">
+    <div style="margin: 0 auto; width: 600px; text-align: center">
       <div
         v-if="originalSize !== null && newSize !== null"
         class="file-sizes">
-        原文件大小: {{ originalSize }} KB | 压缩后大小: {{ newSize }} KB | 压缩率为: {{ compressionRate }}% | 大小减少了: {{ sizeReduced }} KB
+        大小: {{ originalSize }} KB →  {{ newSize }} KB |
+        压缩率为: {{ compressionRate }}% | 压缩大小: {{ sizeReduced }} KB
       </div>
 
       <!-- 显示压缩后的图片 -->
-        <div>
-          <img
-            v-if="imageSrc"
-            :src="imageSrc"
-            alt="压缩结果"
-            style="border-radius: 5px; max-height: 50vh;" />
-        </div>
-        <div>
-          <el-button
-            v-if="imageSrc"
-            plain
-            type="primary"
-            @click="copyImage">
-            复制图片
-          </el-button>
-          <el-button
-            v-if="imageSrc"
-            plain
-            type="success"
-            @click="downloadImage">
-            下载图片
-          </el-button>
+      <div>
+        <img
+          v-if="imageSrc"
+          :src="imageSrc"
+          alt="压缩结果"
+          style="border-radius: 5px; max-height: 50vh" />
+      </div>
+      <div style="margin-top: 10px;">
+        <el-button
+          v-if="imageSrc"
+          plain
+          type="primary"
+          @click="copyImage(imageSrc)">
+          复制图片
+        </el-button>
+        <el-button
+          v-if="imageSrc"
+          plain
+          type="success"
+          @click="downloadImage(imageSrc, originalName)">
+          下载图片
+        </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { h, ref, computed, onMounted, onUnmounted } from 'vue';
 import { genFileId, ElNotification, ElButton, ElUpload } from 'element-plus';
+import { copyImage, downloadImage, formatFileSize } from '../utils';
 
 const originalSize = ref(null);
 const newSize = ref(null);
 const imageSrc = ref(null);
-const originalName = ref(new Date().getTime() +'图片.png');
+const originalName = ref(new Date().getTime() + '图片.png');
 
 const compressionRate = computed(() => {
   if (originalSize.value && newSize.value) {
@@ -87,15 +89,20 @@ const sizeReduced = computed(() => {
   return 0;
 });
 
-const formatFileSize = (file) => {
-  return (file.size / 1024).toFixed(2);
-};
-
 const beforeUpload = (file) => {
   originalSize.value = formatFileSize(file);
+  ElNotification({
+    type: 'info',
+    message: h('div', {class: "notify-wrapper"}, [
+      h('i', { class: { 'uploading': true, } }),
+      h('span','图片上传中'),
+    ]),
+  });
 };
 
 const handleSuccess = (res, file) => {
+  ElNotification.closeAll();
+  ElNotification({ type: 'success', message: '图片压缩成功' });
   if (file) {
     newSize.value = res.size;
     imageSrc.value = res.data;
@@ -106,46 +113,13 @@ const handleSuccess = (res, file) => {
 const handleError = (err, file) => {
   ElNotification({ type: 'error', message: '上传失败请重试' });
 };
-const upload = ref();
 
+const upload = ref();
 const handleExceed = (files) => {
   upload.value.clearFiles();
   const file = files[0];
   file.uid = genFileId();
   upload.value.handleStart(file);
-};
-
-const base64ToBlob = (base64, mimeType = '') => {
-  const byteCharacters = atob(base64);
-  const byteNumbers = new Array(byteCharacters.length);
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-  const byteArray = new Uint8Array(byteNumbers);
-  return new Blob([byteArray], { type: mimeType });
-};
-
-const copyImage = async () => {
-  try {
-    const clipboardItem = new ClipboardItem({
-      'image/png': base64ToBlob(
-        imageSrc.value.replace('data:image/png;base64,', ''),
-        'image/png'
-      ),
-    });
-    await navigator.clipboard.write([clipboardItem]);
-    ElNotification({ type: 'success', message: '图片已复制到剪贴板' });
-  } catch (error) {
-    console.error('复制失败:', error);
-    ElNotification({ type: 'error', message: '复制失败，请重试' });
-  }
-};
-
-const downloadImage = () => {
-  const link = document.createElement('a');
-  link.href = imageSrc.value;
-  link.download = originalName.value;
-  link.click();
 };
 
 const handlePaste = async (event) => {
@@ -159,7 +133,6 @@ const handlePaste = async (event) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      // 模拟请求压缩
       const response = await fetch('/compress', {
         method: 'POST',
         body: formData,
@@ -178,38 +151,30 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('paste', handlePaste);
 });
-
-//   return {
-//     handleExceed,
-//     downloadImage,
-//     originalSize,
-//     newSize,
-//     imageSrc,
-//     compressionRate,
-//     sizeReduced,
-//     beforeUpload,
-//     handleSuccess,
-//     handleError,
-//     copyImage,
-//   };
-// },
-// };
 </script>
 
 <style>
-img {
-  max-width: 100%;
-  margin: 20px 0;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
 .file-sizes {
-  margin-top: 10px;
-  font-size: 14px;
+  margin: 10px 0;
+  font-size: 12px;
+  color: gray;
+}
+.uploading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath stroke-dasharray='2 4' stroke-dashoffset='6' d='M12 21c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9'%3E%3Canimate attributeName='stroke-dashoffset' dur='0.6s' repeatCount='indefinite' values='6;0'/%3E%3C/path%3E%3Cpath stroke-dasharray='32' stroke-dashoffset='32' d='M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9'%3E%3Canimate fill='freeze' attributeName='stroke-dashoffset' begin='0.1s' dur='0.4s' values='32;0'/%3E%3C/path%3E%3Cpath stroke-dasharray='10' stroke-dashoffset='10' d='M12 16v-7.5'%3E%3Canimate fill='freeze' attributeName='stroke-dashoffset' begin='0.5s' dur='0.2s' values='10;0'/%3E%3C/path%3E%3Cpath stroke-dasharray='6' stroke-dashoffset='6' d='M12 8.5l3.5 3.5M12 8.5l-3.5 3.5'%3E%3Canimate fill='freeze' attributeName='stroke-dashoffset' begin='0.7s' dur='0.2s' values='6;0'/%3E%3C/path%3E%3C/g%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+.notify-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>
