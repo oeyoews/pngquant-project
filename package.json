@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "preinstall": "node ./updateShortcut.js",
     "dev": "node ./src/server.js"
   },
   "keywords": [],
