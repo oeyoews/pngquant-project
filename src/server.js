@@ -79,6 +79,14 @@ app.post('/compress', uploadFile, async (req, res) => {
     console.error('Error:', error)
   })
   child.on('close', () => {
+    if (!fs.existsSync(outputPath2)) {
+      console.error("图片压缩失败");
+      res.json({
+        status: 500,
+        message: "图片压缩失败",
+      })
+      return
+    }
     fs.stat(outputPath2, (err, stats) => {
       if (err) {
         console.error('Error getting file size:', err);
