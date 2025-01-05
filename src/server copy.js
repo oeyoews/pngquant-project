@@ -2,10 +2,11 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const spawn = require('cross-spawn');
-// const { execFile } = require('child_process');
+const { execFile } = require('child_process');
 // const { default: pngquant } = require('pngquant-bin');
 const cors = require('cors');
+
+// console.log(pngquant)
 
 const app = express();
 const PORT = 3001;
@@ -48,11 +49,6 @@ function checkDir(dir) {
   }
 }
 
-let pngquant;
-(async () => {
-  pngquant = (await import('pngquant-bin')).default;
-})();
-
 app.post('/compress', uploadFile, async (req, res) => {
   console.log('开始压缩文件', new Date(), req.file.originalname);
   if (!req.file) {
@@ -68,45 +64,56 @@ app.post('/compress', uploadFile, async (req, res) => {
     compressedDir + '/' + new Date().getTime() + '.png'
   );
 
-  // const { default: pngquant } = await import('pngquant-bin');
+  let pngquant
+  const res2 = await import('pngquant-bin')
+  pngquant = res2.default;
 
-  const child = spawn(
+  execFile(
+    // `pngquant`,
+    // ['-o', outputPath2, inputPath],
     pngquant,
     ['--quality=65-80', '--output', outputPath2, inputPath],
-    { stdio: 'inherit' }
-  );
-  child.on('error', (error) => {
-    console.error('Error:', error)
-  })
-  child.on('close', () => {
-    fs.stat(outputPath2, (err, stats) => {
+    (err) => {
       if (err) {
-        console.error('Error getting file size:', err);
-        return res.status(500).json({ error: 'Failed to get file size' });
+        console.error('Error during compression:', err);
+        return res.status(500).send('Compression failed');
       }
 
-      // 读取文件数据
-      fs.readFile(outputPath2, (readErr, fileData) => {
-        if (readErr) {
-          console.error('Error reading file:', readErr);
-          return res.status(500).json({ error: 'Failed to read file' });
+      // res.setHeader('Content-Type', 'image/png');
+      // res.sendFile(outputPath2, (sendErr) => {
+      //   if (sendErr) console.error('Error sending file:', sendErr);
+      // });
+      // console.log(req.file.)
+      // return
+      fs.stat(outputPath2, (err, stats) => {
+        if (err) {
+          console.error('Error getting file size:', err);
+          return res.status(500).json({ error: 'Failed to get file size' });
         }
 
-        // 将文件转换为 Base64
-        const base64Image = `data:image/png;base64,${fileData.toString(
-          'base64'
-        )}`;
-        const fileSizeInKB = (stats.size / 1024).toFixed(2); // 文件大小（KB）
+        // 读取文件数据
+        fs.readFile(outputPath2, (readErr, fileData) => {
+          if (readErr) {
+            console.error('Error reading file:', readErr);
+            return res.status(500).json({ error: 'Failed to read file' });
+          }
 
-        // 返回文件大小和 Base64 数据
-        res.json({
-          size: fileSizeInKB,
-          data: base64Image,
-          filename: req.file.originalname,
+          // 将文件转换为 Base64
+          const base64Image = `data:image/png;base64,${fileData.toString(
+            'base64'
+          )}`;
+          const fileSizeInKB = (stats.size / 1024).toFixed(2); // 文件大小（KB）
+
+          // 返回文件大小和 Base64 数据
+          res.json({
+            size: fileSizeInKB,
+            data: base64Image,
+            filename: req.file.originalname,
+          });
         });
       });
-    });
-  });
+    }
+  );
 });
 
 app.listen(PORT, () => {
