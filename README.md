@@ -14,3 +14,5 @@ pnpm install && pnpm run dev # or use pngquant-start.bat
 <!-- stackblitz pngquant 无权限创建目录, chomd 无效 -->
 
 <!-- ## Build -->
+
+> 此为Vue版本， 仅支持本地部署使用， web版本/本地部署版本请使用 [Nextjs Pngquant Api Project](https://github.com/oeyoews/pngquant-api)
