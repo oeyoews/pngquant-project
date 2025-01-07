@@ -15,4 +15,5 @@ pnpm install && pnpm run dev # or use pngquant-start.bat
 
 <!-- ## Build -->
 
+> [!NOTE]
 > 此为Vue版本， 仅支持本地部署使用， web版本/本地部署版本请使用 [Nextjs Pngquant Api Project](https://github.com/oeyoews/pngquant-api)
