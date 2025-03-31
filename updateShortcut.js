@@ -6,7 +6,7 @@ const os = require("os")
 const path = require('path');
 const fs = require("fs");
 
-// const filename ='在线PNG图片压缩.url'
+const filename ='在线PNG图片压缩.url'
 const batname = 'pngquant-start.bat'
 const templatePath = path.join(__dirname, '/templates', filename);
 const templateContent = fs.readFileSync(templatePath,"utf8");
